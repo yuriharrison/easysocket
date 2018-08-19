@@ -12,7 +12,7 @@ import pytest
 from easysocket import EasySocket, TCPServer, UDPServer, TCPClient, UDPClient
 
 
-ADDRESS = SERVER_IP, SERVER_PORT = ('192.168.0.11', 50550)
+ADDRESS = SERVER_IP, SERVER_PORT = ('127.0.0.1', 50550)
 INVALID_PORT = 55500
 DEFAULT_BUFFER_SIZE = 1024
 REGEX_IP_ADDRESS = '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
