@@ -1,6 +1,6 @@
 # EASYSOCKET
 
-Easysocket make it easy to work with TCP and UPD sockets, client or server. 
+Easysocket make it easy to work with TCP and UPD sockets client and server. 
 
 #### <span style="color:red">*WARKING*</span>
 
