@@ -2,7 +2,7 @@
 
 Easysocket make it easy to work with TCP and UPD sockets client and server. 
 
-#### <span style="color:red">*WARKING*</span>
+#### <span style="color:red">*WARNING*</span>
 
 > The use of easysocket in production is not recommended.
 
