@@ -1,0 +1,10 @@
+*.pyc
+*.pyo
+*.egg-info
+docs/site/
+docs/sources/
+docs/theme/
+tests/.pytest_cache
+
+# developer enviroments
+.vscode/
