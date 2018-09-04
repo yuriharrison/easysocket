@@ -1,5 +1,0 @@
-[
-  "tests/test.py::test_ack_byte",
-  "tests/test.py::test_tcp",
-  "tests/test.py::test_udp"
-]

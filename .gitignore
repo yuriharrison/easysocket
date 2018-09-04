@@ -4,6 +4,7 @@
 docs/site/
 docs/sources/
 docs/theme/
+.pytest_cache
 tests/.pytest_cache
 
 # developer enviroments
