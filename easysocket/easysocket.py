@@ -1,18 +1,19 @@
-import sys
 import traceback
 import socket
+import errno
+
+from . import EasySocketExceptions
 
 
-# TODO: stop serve if it's not possible to bind
-# to the given port
-
+# TODO: add method to run asynchronously
 
 class EasySocket:
     ack_byte = b'\00'
 
-    def __init__(self, server_ip, port, buffer_size=1024):
-        self.server_ip, self.port = self.address = (server_ip, port)
+    def __init__(self, server_ip, port, buffer_size=1024, verbose=None):
+        self.address = self.server_ip, self.port = (server_ip, port)
         self.buffer_size = buffer_size
+        self.verbose = verbose
 
     def receive(self, data):
         pass
@@ -20,26 +21,60 @@ class EasySocket:
 
 class EasySocketServer(EasySocket):
     serve = True
+    socket = None
+
+    def __init__(self, *a, name=None, **kw):
+        super().__init__(*a, **kw)
+        if name:
+            self.name = name
+        else:
+            self.name = 'UNNAMED'
+        self.error_msg = '[EASYSOCKET][SERVER][{}] Exception while running ->'
+        self._running = False
 
     def serve_forever(self):
-        while self.serve:
-            self._server()
+        self._running = True
+        self.serve = True
+        try:
+            while self.serve:
+                try:
+                    self.server()
+                except socket.error as error:
+                    if error.errno == errno.EADDRINUSE:
+                        self.stop_serve()
+                        raise EasySocketExceptions.AddressBusy(self)
+                    elif error.errno == errno.ENOTSOCK:
+                        pass
+                    else:
+                        print(self.error_msg, error)
+                except Exception as e:
+                    print(self.error_msg, e)
+                finally:
+                    self.socket.close()
+        finally:
+            self._running = False
 
-    def _server(self):
+    @property
+    def is_running(self):
+        return self._running
+
+    def server(self):
         pass
 
     def stop_serve(self):
         self.serve = False
+        if self.socket:
+            self.socket.close()
 
 
 class TCPServer(EasySocketServer):
     receive_chunks = False
 
-    def _server(self):
+    def server(self):
         try:
             conn = None
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind((self.server_ip, self.port))
+            self.socket = s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(self.address)
             s.listen(5)
             conn, addr = s.accept()
             self.connection(addr)
@@ -47,7 +82,8 @@ class TCPServer(EasySocketServer):
             full_data = b''
             while True:
                 data = conn.recv(self.buffer_size)
-                if not data: break
+                if not data:
+                    break
                 if receive_chunks:
                     full_data += data
                 else:
@@ -60,9 +96,6 @@ class TCPServer(EasySocketServer):
             ack = b'\00'
             assert len(ack) == 1
             conn.sendall(ack)
-        except:
-            exc = sys.exc_info()
-            traceback.print_exception(*exc)
         finally:
             if conn:
                 conn.close()
@@ -76,20 +109,21 @@ class TCPServer(EasySocketServer):
 
 class UDPServer(EasySocketServer):
 
-    def _server(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.bind(self.address)
-            data, addr = s.recvfrom(self.buffer_size)
-            self.receive(addr, data)
-        finally:
-            s.close()
+    def server(self):
+        self.socket = s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind(self.address)
+        data, addr = s.recvfrom(self.buffer_size)
+        self.receive(addr, data)
 
     def receive(self, addr, data):
         pass
 
 
 class TCPClient(EasySocket):
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.connection = None
 
     def __enter__(self):
         self.open_connection()
@@ -101,7 +135,7 @@ class TCPClient(EasySocket):
     def open_connection(self):
         self.connection = s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect(self.address)
-        
+
     def close_connection(self):
         self.connection.close()
         self.connection = None
@@ -126,7 +160,7 @@ class TCPClient(EasySocket):
 
 
 class UDPClient(EasySocket):
-    
+
     def send(self, data, batch_size=None):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if batch_size:
@@ -145,3 +179,4 @@ class UDPClient(EasySocket):
             else:
                 chunk = data[range_s:range_f]
             yield chunk
+        
